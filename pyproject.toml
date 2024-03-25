@@ -1,0 +1,11 @@
+[project]
+name = "tslib"
+version = "0.0.1"
+description = "timeseries processing library"
+authors = [
+  {name = "Emanuel Boehm", email = "Emanuel.boehm@gmx.de"}
+]
+requires-python = ">= 3.10"
+license = {file = "LICENSE"}
+readme = "README.md"
+dependencies = ["pandas", "numpy", "polars"]
