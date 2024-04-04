@@ -8,8 +8,6 @@ data:
     The `DataFrame` containing the relevant data.
 indices:
     time_indices used for the time series.
-index_type:
-    specification of indices used. Can be "datetime" or "int".
 """
 
 from typing import Optional
@@ -18,6 +16,9 @@ import tslib.utils as utils
 import numpy as np
 
 
+# The timeseries may also consist of following private fields
+# self._time_column: [int | None] indicating the column of the indices in the df
+# self._index_type: "integer" | "datetime" depening on the type of indices
 class Timeseries:
     def __init__(self, data, time_column: Optional[str | int] = None):
         """
@@ -55,14 +56,15 @@ class Timeseries:
                     f"`time_columns` should be of type `int` or `str`, \
                                   but is of type {type(time_column)}"
                 )
+            self._time_column = index_column
             time_type = data.dtypes.iloc[index_column]
             # TODO getting rid of stringly typed specification
 
             # np.integer also covers python integers
             if np.issubdtype(time_type, np.integer):
-                self.index_type = "integer"
+                self._index_type = "integer"
             elif np.issubdtype(time_type, np.datetime64):
-                self.index_type = "datetime"
+                self._index_type = "datetime"
             else:
                 raise AttributeError(
                     "Invalid type of column referenced by `time_column`. Should be of type `int` or `datetime`"
