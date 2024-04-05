@@ -1,4 +1,5 @@
 from gutenTAG.gutenTAG import GutenTAG
+from tslib.timeseries import Timeseries
 import pandas as pd
 
 
@@ -26,10 +27,16 @@ def generate_simple_with_noise(n=40, dimensions=3, noise_strength=0.2, plot=Fals
     gutentag = GutenTAG()
     gutentag.load_config_dict(config)
     ts = gutentag.generate(return_timeseries=True, plot=plot)
+    return _transform_gutentag(ts)
+
+
+def _transform_gutentag(ts):
     assert ts
     dfs = [ts.timeseries for ts in ts]
     for i, df in enumerate(dfs):
         df.drop("is_anomaly", axis=1, inplace=True)
         df.rename(columns={"value-0": f"value-{i}"}, inplace=True)
     res = pd.concat(dfs, axis=1)
-    return res
+    # by default the index column is the time column. We want it to be a actual column
+    res = res.reset_index()
+    return Timeseries(res, time_column="timestamp")
