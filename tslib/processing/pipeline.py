@@ -1,7 +1,7 @@
 import copy
-from types import FunctionType
 from typing import Callable
 from tslib.timeseries import Timeseries
+import numpy as np
 
 
 class Pipeline:
@@ -10,6 +10,7 @@ class Pipeline:
 
     def push(self, f: Callable[[Timeseries], Timeseries]):
         self.fs.append(f)
+        return self
 
     def apply(self, ts: Timeseries, inplace=False):
         if not inplace:
@@ -47,5 +48,20 @@ def standardization(ts: Timeseries):
     pass
 
 
+def add(n=1):
+    def adder(ts: Timeseries):
+        df = ts.df
+        df.loc[:, df.columns != ts._time_column] = df.loc[
+            :, df.columns != ts._time_column
+        ].apply(lambda x: x + n)
+        return ts
+
+    return adder
+
+
 def normalization(ts: Timeseries):
-    pass
+    df = ts.df
+    df.loc[:, df.columns != ts._time_column] = df.loc[
+        :, df.columns != ts._time_column
+    ].apply(lambda x: (x - np.min(x)) / (np.max(x) - np.min(x)))
+    return ts
