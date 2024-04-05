@@ -10,17 +10,18 @@ indices:
     time_indices used for the time series.
 """
 
-from typing import Optional
 import pandas as pd
 import tslib.utils as utils
 import numpy as np
 
+DEFAULT_TIME_COLUMN = "time"
+
 
 # The timeseries may also consist of following private fields
-# self._time_column: [int | None] indicating the column of the indices in the df
+# self._time_column: [str | None] indicating the column of the indices in the df
 # self._index_type: "integer" | "datetime" depening on the type of indices
 class Timeseries:
-    def __init__(self, data, time_column: Optional[str | int] = None):
+    def __init__(self, data, time_column: str | int = DEFAULT_TIME_COLUMN):
         """
         Creates a new ``Timeseries`` object.
         The data has to be or be convertable to a DataFrame (:class:`pandas.DataFrame`).
@@ -30,11 +31,12 @@ class Timeseries:
         data
             The DataFrame or a structure that can be converted as such.
         time_column
-            The name or index of the column used for the `index_strategy`. The column should consist of integers or `DateTime`. If no `time_column` is set, the data will be indexed using the `DateFrame` index will be used directly.
+            The name of the column used as "time" column.
+            The column itself should be a subclass of :class:`np.integer`, :class:`float` or :class: `np.datetime64`.
         """
         if not isinstance(data, pd.DataFrame):
             utils.warn(
-                "Data for `Timeseries` should be of type `DataFrame`. Trying to convert to `DataFrame`"
+                "Data for `Timeseries` should be of type `DataFrame`. Trying to convert to `DataFrame`."
             )
             try:
                 data = pd.DataFrame(data)
@@ -45,35 +47,77 @@ class Timeseries:
                 # The user has the responsibility to provide a valid index for the dataframe
                 assert (
                     0 <= time_column < len(data.columns)
-                ), "couldn't index `DataFrame` by `time_column`"
-                index_column = time_column
+                ), "Couldn't index `DataFrame` by `time_column`"
+                time_column = str(data.columns[time_column])
             elif isinstance(time_column, str):
-                # Can raise an exception in case the column name is not found.
-                # It is the users responsibility to provide a valid column name from the database
-                index_column = data.columns.get_loc(time_column)
+                if not time_column in data.columns:
+                    raise IndexError(
+                        f"Column '{time_column}' not found in `DataFrame`."
+                    )
             else:
                 raise ValueError(
-                    f"`time_columns` should be of type `int` or `str`, \
-                                  but is of type {type(time_column)}"
+                    f"Argument `time_column` should be of type `int` or `str`, \
+                                  but is of type {type(time_column)}."
                 )
-            self._time_column = index_column
-            time_type = data.dtypes.iloc[index_column]
-            # TODO getting rid of stringly typed specification
-
-            # np.integer also covers python integers
-            if np.issubdtype(time_type, np.integer):
-                self._index_type = "integer"
-            elif np.issubdtype(time_type, np.datetime64):
-                self._index_type = "datetime"
-            else:
-                raise AttributeError(
-                    "Invalid type of column referenced by `time_column`. Should be of type `int` or `datetime`"
-                )
-            # indices references the dataframe here which might lead to some weird sideeffects.
-            # TODO consider copy or moving of the column
-            self.indices = data.iloc[:, index_column]
-        else:
-            self.index_type = "integer"
-            self.indices = [i for i in data.index]
-
+            self._time_column = time_column
         self.data = data
+
+    def validate(self):
+        """
+        Valides the `Timeseries`. If the `Timeseries` is not valid, a exception is raised accordingly.
+        A valid `Timeseries` does contain a valid "time" column in the `DataFrame`.
+        A valid time column has elements of a sub class from :class:`np.integer`, :class:`float` or :class: `np.datetime64`
+        and is strictly sorted in ascending order.
+        Raises an corresponding exception if the `Timeseries` is no valid.
+
+        Exceptions
+        ----------
+        IndexError
+            `self._time_column` is not found as a column in the `DataFrame`
+        AttributeError
+            if the time column doesn't contain a valid type
+        AssertionError
+            if the time column is not strictly ordered
+
+        Read the error messages for more information
+        """
+        # Check if time_column does exist in data frame.
+        # It may be removed after creation
+        if self._time_column not in self.data.columns:
+            raise IndexError(
+                f"Validation failed. Column '{self._time_column}' not found in `self.data`.",
+            )
+        time_type = self.data.dtypes[self._time_column]
+
+        # Check if the time column contains a valid datatype.
+        if (
+            not np.issubdtype(time_type, np.integer)
+            and not np.issubdtype(time_type, np.datetime64)
+            and not np.issubdtype(time_type, float)
+        ):
+            raise AttributeError(
+                "Invalid type of column referenced by `time_column`. Should be of type :class:`np.integer`, :class:`float` or :class:`np.datetime64`."
+            )
+        time_values = self.data[self._time_column]
+        if any(
+            time_values[i] >= time_values[i + 1] for i in range(len(time_values) - 1)
+        ):
+            raise AssertionError("time column has to be strictly ordered.")
+
+    def is_valid(self, debug=False) -> bool:
+        """
+        Returns if the `Timeseries` is valid.
+        See :func:`Timeseries.validate()` for more information
+
+        Parameters
+        ----------
+        debug
+            prints the error in case the `Timeseries` is not valid, if `true`.
+        """
+        try:
+            self.validate()
+            return True
+        except Exception as e:
+            if debug:
+                utils.warn(e)
+            return False

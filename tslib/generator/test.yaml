@@ -2,7 +2,7 @@ $schema: "../gutenTAG/config/schema/guten-tag-generation-config.schema.yaml"
 
 timeseries:
 - name: demo
-  length: 1000
+  length: 50
   semi-supervised: false
   supervised: false
   base-oscillations:
@@ -12,7 +12,27 @@ timeseries:
     variance: 0.05
   anomalies:
   - position: middle
-    length: 50
+    length: 10
+    kinds:
+    - kind: pattern
+      sinusoid_k: 10.0
+  - position: end
+    length: 10
+    kinds:
+    - kind: amplitude
+      amplitude_factor: 1.5
+- name: demo2
+  length: 50
+  semi-supervised: false
+  supervised: false
+  base-oscillations:
+  - kind: sine
+    frequency: 2.0
+    amplitude: 1.0
+    variance: 0.05
+  anomalies:
+  - position: middle
+    length: 10
     kinds:
     - kind: pattern
       sinusoid_k: 10.0
