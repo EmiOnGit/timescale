@@ -11,8 +11,6 @@ import numpy as np
 DEFAULT_TIME_COLUMN = "time"
 
 
-# The timeseries may also consist of following private fields
-# self._time_column: [str | None] indicating the column of the indices in the df
 class Timeseries:
     def __init__(self, df, time_column: str | int = DEFAULT_TIME_COLUMN):
         """
@@ -114,3 +112,6 @@ class Timeseries:
             if debug:
                 utils.warn(e)
             return False
+
+    def data_df(self):
+        return self.df.loc[:, self.df.columns != self._time_column]

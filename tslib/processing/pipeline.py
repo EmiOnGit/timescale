@@ -32,6 +32,21 @@ def sampling(ts: Timeseries):
     pass
 
 
+def interpolate_int(factor):
+    def _interpolate_apply(ts):
+        df = ts.df
+        time_c = df[ts._time_column]
+        old_length = len(time_c)
+        new_xs = np.linspace(time_c.iloc[0], time_c.iloc[-1], old_length * factor)
+        df = df.reindex(range(old_length * factor))
+        for c in df:
+            df[c] = np.interp(new_xs, time_c, df[c][:old_length])
+        ts.df = df
+        return ts
+
+    return _interpolate_apply
+
+
 def segmentation(ts: Timeseries):
     pass
 
