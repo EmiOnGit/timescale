@@ -113,9 +113,12 @@ def add(n=1.0):
     return adder
 
 
-def normalization(ts: Timeseries):
-    df = ts.data_df()
-    for c in df:
-        x = df[c]
-        ts.df[c] = (x - np.min(x)) / (np.max(x) - np.min(x))
-    return ts
+def normalization(min=0.0, max=1.0):
+    def normalize(ts: Timeseries):
+        df = ts.data_df()
+        for c in df:
+            x = df[c]
+            ts.df[c] = ((x - np.min(x)) / (np.max(x) - np.min(x))) * (max - min) + min
+        return ts
+
+    return normalize

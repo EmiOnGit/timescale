@@ -1,11 +1,8 @@
-from tslib.processing.pipeline import Pipeline
 from tslib.processing.pipeline import (
     Pipeline,
     interpolate,
     index_to_time,
     normalization,
-    mult,
-    add,
 )
 import numpy as np
 import pandas as pd
@@ -19,9 +16,7 @@ class State:
         self.offset = 0
         self.cached = ts2
 
-        self.norm_pipeline = (
-            Pipeline().push(normalization).push(mult(2.0)).push(add(-1.0))
-        )
+        self.norm_pipeline = Pipeline().push(normalization(-1.0, 1.0))
         self.ts1_normalized = self.norm_pipeline.apply(ts1)
 
     def transform_ts2(self, scale, offset):

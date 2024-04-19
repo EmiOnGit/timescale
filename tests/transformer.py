@@ -31,10 +31,17 @@ def test_add():
 def test_normalize():
     ts = sample_ts()
     pipeline = Pipeline()
-    pipeline.push(normalization)
+    pipeline.push(normalization())
     ts2 = pipeline.apply(ts)
     assert all(ts2.df["a"] == [0.5, 0.0, 1.0])
     assert all(ts2.df["b"] == [0.0, 0.5, 1.0])
+
+    pipeline = Pipeline()
+    pipeline.push(normalization(min=-1.0, max=1.0))
+    ts2 = pipeline.apply(ts)
+    print(ts2.df)
+    assert all(ts2.df["a"] == [0.0, -1.0, 1.0])
+    assert all(ts2.df["b"] == [-1.0, 0.0, 1.0])
 
 
 def test_index_to_time():
