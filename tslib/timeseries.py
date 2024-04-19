@@ -113,5 +113,8 @@ class Timeseries:
                 utils.warn(e)
             return False
 
-    def data_df(self):
+    def data_df(self) -> pd.DataFrame:
         return self.df.loc[:, self.df.columns != self._time_column]
+
+    def time_column(self) -> pd.Series:
+        return pd.Series(self.df[self._time_column])

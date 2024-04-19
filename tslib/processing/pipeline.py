@@ -1,5 +1,6 @@
 import copy
 from typing import Callable
+
 from tslib.timeseries import Timeseries
 import numpy as np
 
@@ -32,19 +33,46 @@ def sampling(ts: Timeseries):
     pass
 
 
-def interpolate_int(factor):
-    def _interpolate_apply(ts):
+def interpolate(factor):
+    """Interpolates all data points"""
+
+    def _interpolate_apply(ts: Timeseries):
         df = ts.df
-        time_c = df[ts._time_column]
-        old_length = len(time_c)
-        new_xs = np.linspace(time_c.iloc[0], time_c.iloc[-1], old_length * factor)
-        df = df.reindex(range(old_length * factor))
+        # number of elements in each column after interpolating
+        num = int(len(df) * factor)
+        # x2_old = [x for x in range(len(df))]
+        x2_old = [x for x in ts.time_column()]
+        # The x axis should be in the same interval than before
+        x2 = np.linspace(x2_old[0], x2_old[-1], num=num)
+        # We need to first calculate all interpolation before reindexing because weird sideeffects might occur if the df was indexed weirdly before
+        interp = {}
         for c in df:
-            df[c] = np.interp(new_xs, time_c, df[c][:old_length])
+            interp[c] = np.interp(x2, x2_old, df[c])
+        df = df.reindex(range(len(x2)))
+        for c in df:
+            df[c] = interp[c]
         ts.df = df
         return ts
 
     return _interpolate_apply
+
+
+def index_to_time(ts: Timeseries):
+    """overrides the `time_column` of the time series with the index of the `DataFrame`
+
+    ---
+    Examples:
+    ```python
+    df = pd.DataFrame(data={"ticks": [1, 2, 3], "data": [-1.0, 4.0, 9.0]})
+    df.set_index(pd.Index([2, 3, 4]), inplace=True)
+    ts = Timeseries(df, time_column="ticks")
+    pipeline = Pipeline().push(index_to_time)
+    ts = pipeline.apply(ts)
+    assert all(ts.time_column() == [2, 3, 4])
+    ```
+    """
+    ts.df[ts._time_column] = [x for x in ts.df.index]
+    return ts
 
 
 def segmentation(ts: Timeseries):
@@ -63,20 +91,20 @@ def standardization(ts: Timeseries):
     pass
 
 
-def add(n=1):
+def add(n=1.0):
     def adder(ts: Timeseries):
-        df = ts.df
-        df.loc[:, df.columns != ts._time_column] = df.loc[
-            :, df.columns != ts._time_column
-        ].apply(lambda x: x + n)
+        df = ts.data_df()
+        for c in df:
+            x = df[c]
+            ts.df[c] = x + n
         return ts
 
     return adder
 
 
 def normalization(ts: Timeseries):
-    df = ts.df
-    df.loc[:, df.columns != ts._time_column] = df.loc[
-        :, df.columns != ts._time_column
-    ].apply(lambda x: (x - np.min(x)) / (np.max(x) - np.min(x)))
+    df = ts.data_df()
+    for c in df:
+        x = df[c]
+        ts.df[c] = (x - np.min(x)) / (np.max(x) - np.min(x))
     return ts
