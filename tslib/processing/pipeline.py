@@ -91,6 +91,17 @@ def standardization(ts: Timeseries):
     pass
 
 
+def mult(n=1.0):
+    def multiplier(ts: Timeseries):
+        df = ts.data_df()
+        for c in df:
+            x = df[c]
+            ts.df[c] = x * n
+        return ts
+
+    return multiplier
+
+
 def add(n=1.0):
     def adder(ts: Timeseries):
         df = ts.data_df()

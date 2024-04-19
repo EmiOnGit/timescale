@@ -2,6 +2,8 @@
 
 import os, sys
 
+from app.state import State
+
 pathname = os.path.dirname(sys.argv[0])
 path = pathname + "/.."
 # needed to import tslib when executing this file
@@ -12,6 +14,7 @@ from tslib.processing.pipeline import *
 from tslib.generator import generate
 from ts_view import TsView
 from info_board import InfoBoard
+import numpy as np
 
 FACTOR = 2
 OFFSET = 10
@@ -30,18 +33,22 @@ app.layout = html.Div(
             id="slider_scale",
             min=0.0,
             max=5.0,
-            step=0.1,
+            step=0.02,
             value=1.0,
             marks={i: "{:.1f}".format(i) for i in np.linspace(0.01, 5.0, 21)},
         ),
-        html.Plaintext(children="offset", style={"textAlign": "center"}),
-        dcc.Slider(
-            id="slider_offset",
-            min=-100,
-            max=100,
-            step=1,
-            value=0.0,
-            marks={i: str(i) for i in range(-100, 100, 10)},
+        html.Div(
+            [
+                html.Plaintext(children="offset", style={"textAlign": "center"}),
+                dcc.Slider(
+                    id="slider_offset",
+                    min=-100,
+                    max=100,
+                    step=1,
+                    value=0.0,
+                    marks={i: str(i) for i in range(-100, 100, 10)},
+                ),
+            ],
         ),
     ]
 )
@@ -53,7 +60,7 @@ app.layout = html.Div(
     Input("slider_offset", "value"),
 )
 def update_correlation(scale, offset):
-    info_board.update(ts_view, scale, offset)
+    info_board.update(state, scale, offset)
     return info_board.draw()
 
 
@@ -63,28 +70,27 @@ def update_correlation(scale, offset):
     Input("slider_offset", "value"),
 )
 def update_graph_scale(scale, offset):
-    ts_view.with_scale(scale)
-    ts_view.with_offset(offset)
-    return ts_view.draw()
+    state.transform_ts2(scale, offset)
+    return ts_view.draw(state.ts1, state)
 
 
 def init_data():
     ts = generate.generate_simple_with_noise(n=100, dimensions=1)
     ts2 = generate.generate_simple_with_noise(n=100, dimensions=1)
     pipeline = Pipeline()
-    pipeline.push(interpolate_int(factor=FACTOR)).push(index_to_time)
+    pipeline.push(interpolate(factor=FACTOR)).push(index_to_time)
     ts = pipeline.apply(ts)
     pipeline = Pipeline()
     # lazy
     pipeline.push(add(1))
     ts2 = pipeline.apply(ts2)
     ts2.df = pd.DataFrame(ts2.df[OFFSET:]).dropna(axis="rows")
-    assert len(ts2.df["timestamp"]) == 90
-    ts_view = TsView(ts, ts2)
+    state = State(ts, ts2)
+    ts_view = TsView()
     info_board = InfoBoard()
-    return ts_view, info_board
+    return ts_view, info_board, state
 
 
 if __name__ == "__main__":
-    ts_view, info_board = init_data()
+    ts_view, info_board, state = init_data()
     app.run(debug=True)
