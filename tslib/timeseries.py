@@ -43,7 +43,7 @@ class Timeseries:
             elif isinstance(time_column, str):
                 if not time_column in df.columns:
                     raise IndexError(
-                        f"Column '{time_column}' not found in `DataFrame`."
+                        f"Column '{time_column}' not found in `DataFrame`, which was expected to be the time column. You can specifiy a custom column name as the `time_column parameter for the `Timeseries` constructer."
                     )
             else:
                 raise ValueError(
