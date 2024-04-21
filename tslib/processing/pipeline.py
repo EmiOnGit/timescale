@@ -1,5 +1,6 @@
 import copy
 from typing import Callable
+import pandas as pd
 
 from tslib.timeseries import Timeseries
 import numpy as np
@@ -73,6 +74,16 @@ def index_to_time(ts: Timeseries):
     """
     ts.df[ts._time_column] = [x for x in ts.df.index]
     return ts
+
+
+def cut_front(n=1, reindex=False):
+    def cut_front_inner(ts: Timeseries) -> Timeseries:
+        ts.df = pd.DataFrame(ts.df[n:].dropna(axis="rows"))
+        if reindex:
+            ts.df.index = ts.df.index - n
+        return ts
+
+    return cut_front_inner
 
 
 def segmentation(ts: Timeseries):

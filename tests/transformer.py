@@ -61,3 +61,22 @@ def test_interpolate():
     assert all(ts2.df["a"] == [3.0, 2.5, 2.0, 3.0, 4.0])
     assert all(ts2.df["b"] == [-1.0, 1.5, 4.0, 6.5, 9.0])
     assert all(ts2.time_column() == [1.0, 1.5, 2.0, 2.5, 3.0])
+
+
+def test_cut_front():
+    ts = sample_ts()
+    pipeline = Pipeline()
+    pipeline.push(cut_front(n=2, reindex=False))
+    ts2 = pipeline.apply(ts)
+    assert all(ts2.df["a"] == [4])
+    assert all(ts2.df["b"] == [9.0])
+    assert all(ts2.time_column() == [3])
+    assert all(ts.df.index == [2, 3, 4])
+    assert all(ts2.df.index == [4])
+    pipeline = Pipeline()
+    pipeline.push(cut_front(n=2, reindex=True))
+    ts2 = pipeline.apply(ts)
+    assert all(ts2.df["a"] == [4])
+    assert all(ts2.df["b"] == [9.0])
+    assert all(ts2.time_column() == [3])
+    assert all(ts2.df.index == [2])
