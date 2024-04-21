@@ -26,7 +26,19 @@ def write_as_parquet(ts: Timeseries, filepath: str | os.PathLike):
     pq.write_table(table, filepath)
 
 
-def read_from_parquet(
+def ts_from_arrow_table(table, time_column=None) -> Timeseries:
+    df = table.to_pandas()
+    if not time_column is None:
+        return Timeseries(df=df, time_column=time_column)
+    existing_metadata = table.schema.metadata
+    encoded_tc = existing_metadata.get(b"time_column")
+    if encoded_tc is None:
+        return Timeseries(df=df)
+    else:
+        return Timeseries(df=df, time_column=encoded_tc.decode("UTF-8"))
+
+
+def read_from_parquet_file(
     filepath: str | os.PathLike, time_column: str | int | None = None
 ) -> Timeseries:
     """Reads a `Timeseries` object from a file.
@@ -44,12 +56,4 @@ def read_from_parquet(
     import pyarrow.parquet as pq
 
     table = pq.read_table(filepath)
-    df = table.to_pandas()
-    if not time_column is None:
-        return Timeseries(df=df, time_column=time_column)
-    existing_metadata = table.schema.metadata
-    encoded_tc = existing_metadata.get(b"time_column")
-    if encoded_tc is None:
-        return Timeseries(df=df)
-    else:
-        return Timeseries(df=df, time_column=encoded_tc.decode("UTF-8"))
+    return ts_from_arrow_table(table, time_column)

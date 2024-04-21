@@ -1,5 +1,7 @@
 #!/usr/bin/env python
-
+import pyarrow as pa
+import pyarrow.parquet as pq
+import tslib.io as tio
 import os, sys
 
 from app.state import State
@@ -10,6 +12,7 @@ path = pathname + "/.."
 sys.path.append(path)
 import pandas as pd
 from dash import Dash, html, dcc, callback, Output, Input
+import dash_bootstrap_components as dbc
 from tslib.processing.pipeline import *
 from tslib.generator import generate
 from ts_view import TsView
@@ -21,13 +24,38 @@ OFFSET = 10
 REAL_OFFSET = FACTOR * OFFSET
 
 
-app = Dash(__name__)
+app = Dash(name="timescale", external_stylesheets=[dbc.themes.BOOTSTRAP])
 
+
+timeseries_block = [
+    dbc.Col(
+        [
+            html.H1(f"ts{i}", style={"textAlign": "center"}),
+            html.Div(id=f"info_n{i}", children="n="),
+            dcc.Upload(
+                id=f"info_upload{i}",
+                children=html.Div([f"Upload for ts{i}"]),
+                style={
+                    "width": "50%",
+                    "lineHeight": "60px",
+                    "borderWidth": "1px",
+                    "borderStyle": "dashed",
+                    "borderRadius": "5px",
+                    "textAlign": "center",
+                    "margin": "10px",
+                },
+                multiple=False,
+            ),
+        ]
+    )
+    for i in range(2)
+]
 app.layout = html.Div(
     [
         html.H1(children="TimeScale", style={"textAlign": "center"}),
-        dcc.Graph(id="graph-content"),
+        dbc.Row([timeseries_block[0], timeseries_block[1]]),
         html.Div(id="correlation", style={"whiteSpace": "pre-line"}),
+        dcc.Graph(id="graph-content"),
         html.Plaintext(children="scale", style={"textAlign": "center"}),
         dcc.Slider(
             id="slider_scale",
@@ -53,6 +81,43 @@ app.layout = html.Div(
     ]
 )
 
+import base64
+
+
+@callback(
+    Output("info_n0", "children"),
+    Input("info_upload0", "contents"),
+)
+def register_upload(content):
+    if content is not None:
+        content = content.split(",")[1]
+        decoded = base64.b64decode(content)
+
+        reader = pa.BufferReader(decoded)
+        table = pq.read_table(reader)
+        ts = tio.ts_from_arrow_table(table)
+        state.ts1_normalized = state.norm_pipeline.apply(ts)
+        state.ts1 = ts
+
+    return f"n: {len(state.ts1.df)}"
+
+
+@callback(
+    Output("info_n1", "children"),
+    Input("info_upload1", "contents"),
+)
+def register_upload2(content):
+    if content is not None:
+        content = content.split(",")[1]
+        decoded = base64.b64decode(content)
+
+        reader = pa.BufferReader(decoded)
+        table = pq.read_table(reader)
+        ts = tio.ts_from_arrow_table(table)
+        state.ts2 = ts
+
+    return f"n: {len(state.ts2.df)}"
+
 
 @callback(
     Output("correlation", "children"),
@@ -68,8 +133,11 @@ def update_correlation(scale, offset):
     Output("graph-content", "figure"),
     Input("slider_scale", "value"),
     Input("slider_offset", "value"),
+    Input("info_n0", "children"),
+    Input("info_n1", "children"),
 )
-def update_graph_scale(scale, offset):
+def update_graph(scale, offset, _s, _i):
+    del _s, _i
     state.transform_ts2(scale, offset)
     return ts_view.draw(state.ts1, state)
 
