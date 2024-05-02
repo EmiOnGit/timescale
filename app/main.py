@@ -1,10 +1,11 @@
 #!/usr/bin/env python
+import plotly.graph_objects as go
 import pyarrow as pa
 import pyarrow.parquet as pq
-import tslib.io as tio
 import os, sys
 
 from app.state import State
+
 
 pathname = os.path.dirname(sys.argv[0])
 path = pathname + "/.."
@@ -15,6 +16,7 @@ from dash import Dash, html, dcc, callback, Output, Input
 import dash_bootstrap_components as dbc
 from tslib.processing.pipeline import *
 from tslib.generator import generate
+import tslib.io as tio
 from ts_view import TsView
 from info_board import InfoBoard
 import numpy as np
@@ -78,6 +80,8 @@ app.layout = html.Div(
                 ),
             ],
         ),
+        dcc.Store(id="ts1store"),
+        dcc.Store(id="ts2store"),
     ]
 )
 
@@ -85,61 +89,100 @@ import base64
 
 
 @callback(
-    Output("info_n0", "children"),
+    Output("ts1store", "data"),
     Input("info_upload0", "contents"),
 )
 def register_upload(content):
-    if content is not None:
-        content = content.split(",")[1]
-        decoded = base64.b64decode(content)
+    if content is None:
+        ts = default_ts1()
+        return tio.to_json(ts)
+    content = content.split(",")[1]
+    decoded = base64.b64decode(content)
 
-        reader = pa.BufferReader(decoded)
-        table = pq.read_table(reader)
-        ts = tio.ts_from_arrow_table(table)
-        state.ts1_normalized = state.norm_pipeline.apply(ts)
-        state.ts1 = ts
-
-    return f"n: {len(state.ts1.df)}"
+    reader = pa.BufferReader(decoded)
+    table = pq.read_table(reader)
+    ts = tio.ts_from_arrow_table(table)
+    return tio.to_json(ts)
 
 
 @callback(
-    Output("info_n1", "children"),
+    Output("ts2store", "data"),
     Input("info_upload1", "contents"),
 )
 def register_upload2(content):
-    if content is not None:
-        content = content.split(",")[1]
-        decoded = base64.b64decode(content)
+    if content is None:
+        ts = default_ts2()
+        return tio.to_json(ts)
+    content = content.split(",")[1]
+    decoded = base64.b64decode(content)
 
-        reader = pa.BufferReader(decoded)
-        table = pq.read_table(reader)
-        ts = tio.ts_from_arrow_table(table)
-        state.ts2 = ts
+    reader = pa.BufferReader(decoded)
+    table = pq.read_table(reader)
+    ts = tio.ts_from_arrow_table(table)
+    return tio.to_json(ts)
 
-    return f"n: {len(state.ts2.df)}"
+
+@callback(Output("info_n0", "children"), Input("ts1store", "data"))
+def on_ts_change(ts1json):
+    ts1 = tio.from_json(ts1json)
+    return f"n: {len(ts1.df)}"
+
+
+@callback(Output("info_n1", "children"), Input("ts2store", "data"))
+def on_ts2_change(ts2json):
+    ts2 = tio.from_json(ts2json)
+    return f"n: {len(ts2.df)}"
 
 
 @callback(
     Output("correlation", "children"),
+    Input("ts1store", "data"),
+    Input("ts2store", "data"),
     Input("slider_scale", "value"),
     Input("slider_offset", "value"),
 )
-def update_correlation(scale, offset):
-    info_board.update(state, scale, offset)
-    return info_board.draw()
+def update_correlation(ts1, ts2, scale, offset):
+    ts1, ts2 = tio.from_json(ts1), tio.from_json(ts2)
+    state = State(ts1, ts2, scale, offset)
+    correlations = state.correlations()
+    sum = np.sum(correlations["corr"])
+    return f"Correlation: {sum}"
 
 
 @callback(
     Output("graph-content", "figure"),
+    Input("ts1store", "data"),
+    Input("ts2store", "data"),
     Input("slider_scale", "value"),
     Input("slider_offset", "value"),
-    Input("info_n0", "children"),
-    Input("info_n1", "children"),
 )
-def update_graph(scale, offset, _s, _i):
-    del _s, _i
-    state.transform_ts2(scale, offset)
-    return ts_view.draw(state.ts1, state)
+def update_graph(ts1, ts2, scale, offset):
+    ts1, ts2 = tio.from_json(ts1), tio.from_json(ts2)
+    state = State(ts1, ts2, scale, offset)
+    ts2_trans = state.transform_ts2()
+    correlations = state.correlations()
+    fig = go.Figure()
+    fig.add_scatter(x=ts2_trans.df["timestamp"], y=ts2_trans.df["value-0"])
+    fig.add_scatter(x=ts1.df["timestamp"], y=ts1.df["value-0"])
+    fig.add_bar(x=correlations["timestamp"], y=correlations["corr"], name="correlation")
+    return fig
+
+
+def default_ts1():
+    ts = generate.generate_simple_with_noise(n=100, dimensions=1)
+    pipeline = Pipeline()
+    pipeline.push(interpolate(factor=FACTOR)).push(index_to_time)
+    ts = pipeline.apply(ts)
+    return ts
+
+
+def default_ts2():
+    ts2 = generate.generate_simple_with_noise(n=100, dimensions=1)
+    pipeline = Pipeline()
+    pipeline.push(add(1))
+    ts2 = pipeline.apply(ts2)
+    ts2.df = pd.DataFrame(ts2.df[OFFSET:]).dropna(axis="rows")
+    return ts2
 
 
 def init_data():
@@ -153,12 +196,11 @@ def init_data():
     pipeline.push(add(1))
     ts2 = pipeline.apply(ts2)
     ts2.df = pd.DataFrame(ts2.df[OFFSET:]).dropna(axis="rows")
-    state = State(ts, ts2)
     ts_view = TsView()
     info_board = InfoBoard()
-    return ts_view, info_board, state
+    return ts_view, info_board
 
 
 if __name__ == "__main__":
-    ts_view, info_board, state = init_data()
+    ts_view, info_board = init_data()
     app.run(debug=True)

@@ -1,6 +1,7 @@
 from tslib.timeseries import Timeseries
 import pyarrow as pa
 import os
+import pandas as pd
 
 
 def write_as_parquet(ts: Timeseries, filepath: str | os.PathLike):
@@ -57,3 +58,20 @@ def read_from_parquet_file(
 
     table = pq.read_table(filepath)
     return ts_from_arrow_table(table, time_column)
+
+
+def to_json(ts: Timeseries) -> str:
+    import json
+
+    ts_repr = ts.__dict__.copy()
+    ts_repr["df"] = ts.df.to_json(orient="records")
+    return json.dumps(ts_repr)
+
+
+def from_json(input: str) -> Timeseries:
+    import json
+
+    ts_repr = json.loads(input)
+    df_repr = json.loads(ts_repr["df"])
+    df = pd.json_normalize(df_repr)
+    return Timeseries(df, ts_repr["_time_column"])
