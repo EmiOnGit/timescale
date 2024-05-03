@@ -9,7 +9,13 @@ import dash_bootstrap_components as dbc
 
 import pandas as pd
 import numpy as np
-from app.state import Alignment, Settings, ViewState, alignment_or_default
+from app.state import (
+    Alignment,
+    Settings,
+    ViewState,
+    alignment_or_default,
+    method_to_aligner,
+)
 import base64
 
 import os
@@ -112,7 +118,7 @@ app.layout = html.Div(
     [
         html.H1(children="TimeScale", style={"textAlign": "center"}),
         dbc.Row([timeseries_block[0], timeseries_block[1], settings_block]),
-        html.Div(id="correlation", style={"whiteSpace": "pre-line"}),
+        html.Div(id="align_score", style={"whiteSpace": "pre-line"}),
         dcc.Graph(id="graph-content"),
         html.Plaintext(children="scale", style={"textAlign": "center"}),
         dcc.Slider(
@@ -158,8 +164,9 @@ def align(clicks, ts1json, ts2json, settings):
     ts2 = tio.from_json(ts2json)
     settings = Settings(**json.loads(settings))
     pbounds = {"translation": (-200, 200), "scale": (0.2, 5.0)}
+    aligner_class = method_to_aligner(settings.align_method)
     optimizer = BayesianOptimization(
-        f=tsalign.aligner(ts1, ts2),
+        f=tsalign.align(ts1, ts2, aligner_class),
         pbounds=pbounds,
         verbose=1,  # verbose = 1 prints only when a maximum is observed, verbose = 0 is silent
     )
@@ -246,23 +253,7 @@ def alignment_slider(scale, offset):
 
 
 @callback(
-    Output("correlation", "children"),
-    Input("ts1store", "data"),
-    Input("ts2store", "data"),
-    Input("alignment", "data"),
-    Input("settings", "data"),
-)
-def update_correlation(ts1, ts2, alignment, settings):
-    ts1, ts2 = tio.from_json(ts1), tio.from_json(ts2)
-    settings = Settings(**json.loads(settings))
-    alignment = alignment_or_default(alignment)
-    state = ViewState(ts1, ts2, alignment)
-    correlations = state.apply(settings.align_method)
-    sum = np.sum(correlations["corr"])
-    return f"Correlation: {sum}"
-
-
-@callback(
+    Output("align_score", "children"),
     Output("graph-content", "figure"),
     Input("ts1store", "data"),
     Input("ts2store", "data"),
@@ -270,20 +261,25 @@ def update_correlation(ts1, ts2, alignment, settings):
     Input("settings", "data"),
 )
 def update_graph(ts1, ts2, alignment, settings):
+    # deserialize from data storage
     ts1, ts2 = tio.from_json(ts1), tio.from_json(ts2)
     alignment = alignment_or_default(alignment)
     settings = Settings(**json.loads(settings))
     state = ViewState(ts1, ts2, alignment)
-    ts2_trans = state.transform_ts2()
-    correlations = state.apply(settings.align_method)
+
+    ts1_trans, ts2_trans = state.transform()
+    aligner = method_to_aligner(settings.align_method)
+    aligner = aligner(ts1_trans, ts2_trans)
+
+    # draw
     fig = go.Figure()
     fig.layout.__setattr__("uirevision", "const")
     fig.add_scatter(x=ts2_trans.df["timestamp"], y=ts2_trans.df["value-0"], name="ts2")
     # if 'uirevision' stays as it was before updating the figure, the zoom/ui will not reset. 'const' as value is arbitrary
     fig.add_scatter(x=ts1.df["timestamp"], y=ts1.df["value-0"], name="ts1")
-
-    fig.add_bar(x=correlations["timestamp"], y=correlations["corr"], name="correlation")
-    return fig
+    aligner.add_visualization(fig)
+    score = aligner.alignment_score()
+    return f"score {score}", fig
 
 
 def default_ts1():
