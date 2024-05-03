@@ -52,7 +52,7 @@ def align(clicks, ts1json, ts2json, settings):
     ts1 = tio.from_json(ts1json)
     ts2 = tio.from_json(ts2json)
     settings = Settings(**json.loads(settings))
-    pbounds = {"translation": (-200, 200), "scale": (0.2, 5.0)}
+    pbounds = {"translation": (-200.0, 200.0), "scale": (0.2, 5.0)}
     aligner_class = method_to_aligner(settings.align_method)
     optimizer = BayesianOptimization(
         f=tsalign.align(ts1, ts2, aligner_class),

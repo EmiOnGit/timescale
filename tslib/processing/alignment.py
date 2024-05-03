@@ -17,12 +17,12 @@ from dataclasses import dataclass
 @dataclass
 class Alignment:
     scale: float
-    offset: int
+    offset: float
 
 
 def align(ts1, ts2, alignerclass):
-    def inner(translation: int, scale: float):
-        alignment = Alignment(scale, offset=int(translation))
+    def inner(translation: float, scale: float):
+        alignment = Alignment(scale, offset=translation)
         aligner = alignerclass(ts1, ts2)
         aligner.transform(alignment)
         return aligner.alignment_score()
@@ -40,8 +40,18 @@ class BaseAligner(ABC):
         pipeline.push(interpolate(factor=alignment.scale)).push(index_to_time)
         ts_trans2 = pipeline.apply(self.ts2)
         ts_trans2.df[ts_trans2._time_column] = [
-            x + alignment.offset for x in ts_trans2.time_column()
+            x + int(alignment.offset) for x in ts_trans2.time_column()
         ]
+        if not alignment.offset.is_integer():
+            lam = alignment.offset - int(alignment.offset)
+            data_df = ts_trans2.data_df()
+            for c in data_df:
+                x = data_df[c]
+                one_shift = pd.Series(x[1:]).to_numpy()
+                ts_trans2.df[c] = (1.0 - lam) * x + lam * np.append(
+                    one_shift, x.values[-1]
+                )
+
         norm_pipeline = Pipeline().push(normalization(-1.0, 1.0))
         ts_trans2 = norm_pipeline.apply(ts_trans2)
         norm_pipeline = Pipeline().push(normalization(-1.0, 1.0))
