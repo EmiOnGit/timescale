@@ -3,12 +3,11 @@ from bayes_opt import BayesianOptimization
 import plotly.graph_objects as go
 import pyarrow as pa
 import pyarrow.parquet as pq
-from dash import Dash, State, html, dcc, callback, Output, Input
+from dash import Dash, State, callback, Output, Input
 import json
 import dash_bootstrap_components as dbc
 
 import pandas as pd
-import numpy as np
 from app.state import (
     Alignment,
     Settings,
@@ -16,6 +15,7 @@ from app.state import (
     alignment_or_default,
     method_to_aligner,
 )
+import app.layout as layout
 import base64
 
 import os
@@ -36,118 +36,7 @@ REAL_OFFSET = FACTOR * OFFSET
 
 
 app = Dash(name="timescale", external_stylesheets=[dbc.themes.BOOTSTRAP])
-
-
-timeseries_block = [
-    dbc.Col(
-        [
-            html.H1(f"ts{i}", style={"textAlign": "center"}),
-            dcc.Upload(
-                id=f"info_upload{i}",
-                children=html.Div([f"Upload for ts{i}"]),
-                style={
-                    "width": "50%",
-                    "lineHeight": "60px",
-                    "borderWidth": "1px",
-                    "borderStyle": "dashed",
-                    "borderRadius": "5px",
-                    "textAlign": "center",
-                    "margin-right": "70px",
-                    "margin-left": "70px",
-                },
-                multiple=False,
-            ),
-            html.Div(id=f"info_n{i}", children="n="),
-        ],
-        style={
-            "display": "flex",
-            "flex-direction": "column",
-            "align-items": "center",
-            "justify-content": "center",
-        },
-    )
-    for i in range(1, 3)
-]
-settings_block = dbc.Col(
-    [
-        html.H1("Settings", style={"textAlign": "center"}),
-        dcc.Dropdown(
-            ["correlation", "function sum"],
-            "correlation",
-            id="method_dropdown",
-            style={
-                "width": "220px",
-                "textAlign": "center",
-                "margin-bottom": "10px",
-            },
-        ),
-        html.Div(
-            [
-                html.Div("points"),
-                dcc.Slider(
-                    id="slider_points",
-                    min=1,
-                    max=500,
-                    step=1,
-                    value=100,
-                    marks={i: "{}".format(i) for i in range(0, 501, 100)},
-                    # style={"width": "200px"},
-                ),
-                html.Div("iterations"),
-                dcc.Slider(
-                    id="slider_iterations",
-                    min=1,
-                    max=80,
-                    step=1,
-                    value=16,
-                    marks={i: "{}".format(i) for i in range(0, 81, 10)},
-                ),
-            ],
-            style={"width": "300px"},
-        ),
-        html.Button("Align", id="calculate_align"),
-    ],
-    style={
-        "display": "flex",
-        "flex-direction": "column",
-        "align-items": "center",
-        "justify-content": "center",
-    },
-)
-app.layout = html.Div(
-    [
-        html.H1(children="TimeScale", style={"textAlign": "center"}),
-        dbc.Row([timeseries_block[0], timeseries_block[1], settings_block]),
-        html.Div(id="align_score", style={"whiteSpace": "pre-line"}),
-        dcc.Graph(id="graph-content"),
-        html.Plaintext(children="scale", style={"textAlign": "center"}),
-        dcc.Slider(
-            id="slider_scale",
-            min=0.0,
-            max=5.0,
-            step=0.02,
-            value=1.0,
-            marks={i: "{:.1f}".format(i) for i in np.linspace(0.01, 5.0, 21)},
-        ),
-        html.Div(
-            [
-                html.Plaintext(children="offset", style={"textAlign": "center"}),
-                dcc.Slider(
-                    id="slider_offset",
-                    min=-100,
-                    max=100,
-                    step=1,
-                    value=0.0,
-                    marks={i: str(i) for i in range(-100, 100, 10)},
-                ),
-            ],
-        ),
-        dcc.Store(id="ts1store"),
-        dcc.Store(id="ts2store"),
-        dcc.Store(id="alignment"),
-        dcc.Store(id="settings"),
-    ]
-)
+app.layout = layout.layout()
 
 
 @callback(
