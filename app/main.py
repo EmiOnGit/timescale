@@ -99,6 +99,10 @@ def register_upload(content):
     reader = pa.BufferReader(decoded)
     table = pq.read_table(reader)
     ts = tio.ts_from_arrow_table(table)
+    # TODO!!! time column has to be of the same time between ts1 and ts2. Not sure if we want to push index to time column
+    # pipeline = Pipeline()
+    # pipeline.push(index_to_time)
+    # ts = pipeline.apply(ts)
     return tio.to_json(ts)
 
 
@@ -163,9 +167,11 @@ def update_graph(ts1, ts2, alignment, settings):
     # draw
     fig = go.Figure()
     fig.layout.__setattr__("uirevision", "const")
-    fig.add_scatter(x=ts2_trans.df["timestamp"], y=ts2_trans.df["value-0"], name="ts2")
+    fig.add_scatter(
+        x=ts2_trans.time_column(), y=ts2_trans.data_df().iloc[:, 0], name="ts2"
+    )
     # if 'uirevision' stays as it was before updating the figure, the zoom/ui will not reset. 'const' as value is arbitrary
-    fig.add_scatter(x=ts1.df["timestamp"], y=ts1.df["value-0"], name="ts1")
+    fig.add_scatter(x=ts1.time_column(), y=ts1.data_df().iloc[:, 0], name="ts1")
     aligner.add_visualization(fig)
     score = aligner.alignment_score()
     return f"score {score}", fig

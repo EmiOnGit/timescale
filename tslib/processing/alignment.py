@@ -70,10 +70,16 @@ class BaseAligner(ABC):
 
 
 def calculate_sum(ts1, ts2):
-    df = pd.merge(ts1.df, ts2.df, on="timestamp")
-    df["result"] = df.loc[:, df.columns != "timestamp"].apply(
-        lambda x: np.abs(np.sum(x)), axis=1
-    )
+    df = pd.merge(ts1.df, ts2.df, left_on=ts1._time_column, right_on=ts2._time_column)
+    df["result"] = df.loc[
+        :,
+        [
+            a and b
+            for a, b in zip(
+                df.columns != ts1._time_column, df.columns != ts2._time_column
+            )
+        ],
+    ].apply(lambda x: np.abs(np.sum(x)), axis=1)
     return df
 
 
@@ -95,9 +101,17 @@ class SumAligner(BaseAligner):
 
 
 def calculate_corr(ts1, ts2):
-    df = pd.merge(ts1.df, ts2.df, on="timestamp")
+    df = pd.merge(ts1.df, ts2.df, left_on=ts1._time_column, right_on=ts2._time_column)
 
-    df["result"] = df.loc[:, df.columns != "timestamp"].apply(np.prod, axis=1)
+    df["result"] = df.loc[
+        :,
+        [
+            a and b
+            for a, b in zip(
+                df.columns != ts1._time_column, df.columns != ts2._time_column
+            )
+        ],
+    ].apply(np.prod, axis=1)
     return df
 
 
@@ -116,5 +130,7 @@ class CorrelationAligner(BaseAligner):
     def add_visualization(self, figure: Figure):
         correlations = self.apply()
         figure.add_bar(
-            x=correlations["timestamp"], y=correlations["result"], name="correlation"
+            x=correlations[self.ts1._time_column],
+            y=correlations["result"],
+            name="correlation",
         )
