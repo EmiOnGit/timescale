@@ -54,13 +54,14 @@ class BaseAligner(ABC):
         pass
 
     @abstractmethod
+    # TODO remove from library side since it is not a feature of a library but should be implemented on the user side only
     def add_visualization(self, figure: Figure):
         pass
 
 
 def calculate_sum(ts1, ts2):
     df = pd.merge(ts1.df, ts2.df, on="timestamp")
-    df["corr"] = df.loc[:, df.columns != "timestamp"].apply(
+    df["result"] = df.loc[:, df.columns != "timestamp"].apply(
         lambda x: np.abs(np.sum(x)), axis=1
     )
     return df
@@ -76,17 +77,17 @@ class SumAligner(BaseAligner):
 
     def alignment_score(self):
         sums = self.apply()
-        return np.sum(sums["corr"])
+        return np.sum(sums["result"])
 
     def add_visualization(self, figure: Figure):
         sums = self.apply()
-        figure.add_bar(x=sums["timestamp"], y=sums["corr"], name="sums")
+        figure.add_bar(x=sums["timestamp"], y=sums["result"], name="sums")
 
 
 def calculate_corr(ts1, ts2):
     df = pd.merge(ts1.df, ts2.df, on="timestamp")
 
-    df["corr"] = df.loc[:, df.columns != "timestamp"].apply(np.prod, axis=1)
+    df["result"] = df.loc[:, df.columns != "timestamp"].apply(np.prod, axis=1)
     return df
 
 
@@ -100,43 +101,10 @@ class CorrelationAligner(BaseAligner):
 
     def alignment_score(self):
         correlations = self.apply()
-        return np.sum(correlations["corr"])
+        return np.sum(correlations["result"])
 
     def add_visualization(self, figure: Figure):
         correlations = self.apply()
         figure.add_bar(
-            x=correlations["timestamp"], y=correlations["corr"], name="correlation"
+            x=correlations["timestamp"], y=correlations["result"], name="correlation"
         )
-
-
-# def aligner(ts1, ts2):
-#     def inner(scale, translation) -> float:
-#         return align_at(ts1, ts2, scale, translation)
-
-#     return inner
-
-
-# def align_at(ts1, ts2, scaling, translation) -> float:
-#     normalizer = Pipeline().push(normalization(-1.0, 1.0))
-#     transformer = Pipeline().push(interpolate(factor=scaling)).push(index_to_time)
-#     ts1_tr = normalizer.apply(ts1)
-#     ts2_tr = transformer.apply(ts2)
-#     ts2_tr.df[ts2_tr._time_column] = [
-#         x + int(translation) for x in ts2_tr.time_column()
-#     ]
-#     ts2_tr = normalizer.apply(ts2_tr)
-#     # print(ts1_tr.df)
-#     correlation = calculate_corr(ts1_tr, ts2_tr)
-#     return correlation
-
-
-# def calculate_corr(ts1, ts2) -> float:
-#     corr = calculate_corr_vec(ts1, ts2)
-#     return np.sum(corr["corr"])
-
-
-# def calculate_corr_vec(ts1, ts2):
-#     df = pd.merge(ts1.df, ts2.df, on="timestamp")
-
-#     df["corr"] = df.loc[:, df.columns != "timestamp"].apply(np.prod, axis=1)
-#     return df

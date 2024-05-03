@@ -6,7 +6,7 @@ from tslib.processing.pipeline import (
     index_to_time,
     normalization,
 )
-from tslib.processing.alignment import SumAligner, CorrelationAligner, BaseAligner
+from tslib.processing.alignment import SumAligner, CorrelationAligner
 
 from tslib.timeseries import Timeseries
 import json
