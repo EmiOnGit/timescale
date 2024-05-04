@@ -154,7 +154,7 @@ def update_graph(ts1, ts2, alignment, settings):
     fig.add_scatter(x=ts1.time_column(), y=ts1.data_df().iloc[:, 0], name="ts1")
     aligner.add_visualization(fig)
     score = aligner.alignment_score()
-    return f"score {score}", fig
+    return f"{score}", fig
 
 
 def default_ts1():

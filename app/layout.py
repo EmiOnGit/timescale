@@ -1,44 +1,107 @@
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 
-timeseries_block = [
-    dbc.Col(
-        [
-            dcc.Upload(
-                id=f"info_upload{i}",
-                children=[
-                    html.H1(f"ts{i}", style={"textAlign": "center"}),
-                    html.Hr(),
-                    html.Div(id=f"info_n{i}", children="n="),
-                    html.Div(id=f"info_filepath{i}", children="default dataset"),
-                ],
-                style={
-                    "width": "80%",
-                    "lineHeight": "20px",
-                    "borderWidth": "1px",
-                    "borderStyle": "dashed",
-                    "borderRadius": "5px",
-                    "textAlign": "center",
-                    "margin-right": "50px",
-                    "margin-left": "50px",
-                    "padding-right": "20px",
-                    "padding-left": "20px",
-                },
-                multiple=False,
-            ),
-        ],
+
+def header(title) -> html.H1:
+    return html.H1(
+        title,
+        style={
+            "textAlign": "center",
+            "display": "inline-block",
+            "padding-right": "50px",
+            "padding-left": "50px",
+            "border-bottom": "2px solid #888",
+        },
+    )
+
+
+def head_col(children):
+    return dbc.Col(
+        children,
         style={
             "display": "flex",
             "flex-direction": "column",
             "align-items": "center",
-            "justify-content": "center",
         },
     )
-    for i in range(1, 3)
-]
-settings_block = dbc.Col(
+
+
+timeseries_block = head_col(
     [
-        html.H1("Settings", style={"textAlign": "center"}),
+        dcc.Upload(
+            id=f"info_upload{i}",
+            children=[
+                header(f"ts{i}"),
+                html.Div(id=f"info_n{i}", children="n="),
+                html.Div(id=f"info_filepath{i}", children="default dataset"),
+            ],
+            style={
+                "width": "80%",
+                "lineHeight": "20px",
+                "border": "2px dashed #ccc",
+                "borderRadius": "5px",
+                "textAlign": "center",
+                "margin-right": "50px",
+                "margin-left": "50px",
+                "padding": "10px",
+                "margin-bottom": "10px",
+            },
+            multiple=False,
+        )
+        for i in range(1, 3)
+    ]
+)
+settings_block = head_col(
+    [
+        header("Settings"),
+        dbc.Row(
+            [
+                dbc.Col(
+                    [
+                        html.Div("score"),
+                        html.Div("scale"),
+                        html.Div("offset"),
+                    ],
+                    style={
+                        "display": "flex",
+                        "flex-direction": "column",
+                        "align-items": "center",
+                        "justify-content": "space-evenly",
+                    },
+                ),
+                dbc.Col(
+                    [
+                        html.Div(id="align_score"),
+                        dcc.Input(
+                            id="input_scale",
+                            type="number",
+                            min=0.0,
+                            max=5.0,
+                            value=1.0,
+                        ),
+                        dcc.Input(
+                            id="input_offset",
+                            type="number",
+                            min=-10000.0,
+                            max=10000.0,
+                            value=0.0,
+                        ),
+                    ],
+                    style={
+                        "display": "flex",
+                        "flex-direction": "column",
+                        "align-items": "center",
+                        "justify-content": "space-evenly",
+                    },
+                ),
+            ],
+            style={"display": "flex", "flex-direction": "row", "align-items": "center"},
+        ),
+    ]
+)
+aligner_block = head_col(
+    [
+        header("Aligner"),
         dcc.Dropdown(
             ["correlation", "function sum"],
             "correlation",
@@ -74,13 +137,7 @@ settings_block = dbc.Col(
             style={"width": "300px"},
         ),
         html.Button("Align", id="calculate_align"),
-    ],
-    style={
-        "display": "flex",
-        "flex-direction": "column",
-        "align-items": "center",
-        "justify-content": "center",
-    },
+    ]
 )
 
 
@@ -88,29 +145,14 @@ def layout():
     return html.Div(
         [
             html.H1(children="TimeScale", style={"textAlign": "center"}),
-            dbc.Row([timeseries_block[0], timeseries_block[1], settings_block]),
-            html.Div(id="align_score", style={"whiteSpace": "pre-line"}),
-            dcc.Graph(id="graph-content"),
-            html.Plaintext(children="scale", style={"textAlign": "center"}),
-            dcc.Input(
-                id="input_scale",
-                type="number",
-                min=0.0,
-                max=5.0,
-                value=1.0,
-            ),
-            html.Div(
+            dbc.Row(
                 [
-                    html.Plaintext(children="offset", style={"textAlign": "center"}),
-                    dcc.Input(
-                        id="input_offset",
-                        type="number",
-                        min=-10000.0,
-                        max=10000.0,
-                        value=0.0,
-                    ),
-                ],
+                    timeseries_block,
+                    settings_block,
+                    aligner_block,
+                ]
             ),
+            dcc.Graph(id="graph-content"),
             dcc.Store(id="ts1store"),
             dcc.Store(id="ts2store"),
             dcc.Store(id="alignment"),
