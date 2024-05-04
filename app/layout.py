@@ -1,27 +1,31 @@
 from dash import html, dcc
 import dash_bootstrap_components as dbc
-import numpy as np
 
 timeseries_block = [
     dbc.Col(
         [
-            html.H1(f"ts{i}", style={"textAlign": "center"}),
             dcc.Upload(
                 id=f"info_upload{i}",
-                children=html.Div([f"Upload for ts{i}"]),
+                children=[
+                    html.H1(f"ts{i}", style={"textAlign": "center"}),
+                    html.Hr(),
+                    html.Div(id=f"info_n{i}", children="n="),
+                    html.Div(id=f"info_filepath{i}", children="default dataset"),
+                ],
                 style={
-                    "width": "50%",
-                    "lineHeight": "60px",
+                    "width": "80%",
+                    "lineHeight": "20px",
                     "borderWidth": "1px",
                     "borderStyle": "dashed",
                     "borderRadius": "5px",
                     "textAlign": "center",
-                    "margin-right": "70px",
-                    "margin-left": "70px",
+                    "margin-right": "50px",
+                    "margin-left": "50px",
+                    "padding-right": "20px",
+                    "padding-left": "20px",
                 },
                 multiple=False,
             ),
-            html.Div(id=f"info_n{i}", children="n="),
         ],
         style={
             "display": "flex",

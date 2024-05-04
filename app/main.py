@@ -85,54 +85,34 @@ def register_settings(points, iterations, align_method):
     )
 
 
-@callback(
-    Output("ts1store", "data"),
-    Input("info_upload1", "contents"),
-)
-def register_upload(content):
-    if content is None:
-        ts = default_ts1()
-        return tio.to_json(ts)
-    content = content.split(",")[1]
-    decoded = base64.b64decode(content)
+for i in range(1, 3):
 
-    reader = pa.BufferReader(decoded)
-    table = pq.read_table(reader)
-    ts = tio.ts_from_arrow_table(table)
-    # TODO!!! time column has to be of the same time between ts1 and ts2. Not sure if we want to push index to time column
-    # pipeline = Pipeline()
-    # pipeline.push(index_to_time)
-    # ts = pipeline.apply(ts)
-    return tio.to_json(ts)
+    @callback(
+        Output(f"ts{i}store", "data"),
+        Output(f"info_filepath{i}", "children"),
+        State(f"info_upload{i}", "filename"),
+        Input(f"info_upload{i}", "contents"),
+    )
+    def register_upload(filename, content):
+        if content is None:
+            ts = default_ts1()
+            return tio.to_json(ts), "default dataset"
+        content = content.split(",")[1]
+        decoded = base64.b64decode(content)
 
+        reader = pa.BufferReader(decoded)
+        table = pq.read_table(reader)
+        ts = tio.ts_from_arrow_table(table)
+        # TODO!!! time column has to be of the same time between ts1 and ts2. Not sure if we want to push index to time column
+        # pipeline = Pipeline()
+        # pipeline.push(index_to_time)
+        # ts = pipeline.apply(ts)
+        return tio.to_json(ts), f"file: {filename}"
 
-@callback(
-    Output("ts2store", "data"),
-    Input("info_upload2", "contents"),
-)
-def register_upload2(content):
-    if content is None:
-        ts = default_ts2()
-        return tio.to_json(ts)
-    content = content.split(",")[1]
-    decoded = base64.b64decode(content)
-
-    reader = pa.BufferReader(decoded)
-    table = pq.read_table(reader)
-    ts = tio.ts_from_arrow_table(table)
-    return tio.to_json(ts)
-
-
-@callback(Output("info_n1", "children"), Input("ts1store", "data"))
-def info_ts1(ts1json):
-    ts1 = tio.from_json(ts1json)
-    return f"n: {len(ts1.df)}"
-
-
-@callback(Output("info_n2", "children"), Input("ts2store", "data"))
-def info_ts2(ts2json):
-    ts2 = tio.from_json(ts2json)
-    return f"n: {len(ts2.df)}"
+    @callback(Output(f"info_n{i}", "children"), Input(f"ts{i}store", "data"))
+    def info_ts(ts_json):
+        ts = tio.from_json(ts_json)
+        return f"n: {len(ts.df)}"
 
 
 @callback(
