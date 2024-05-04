@@ -137,8 +137,8 @@ def info_ts2(ts2json):
 
 @callback(
     Output("alignment", "data", allow_duplicate=True),
-    Input("slider_scale", "value"),
-    Input("slider_offset", "value"),
+    Input("input_scale", "value"),
+    Input("input_offset", "value"),
     prevent_initial_call=True,
 )
 def alignment_slider(scale, offset):

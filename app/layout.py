@@ -88,24 +88,22 @@ def layout():
             html.Div(id="align_score", style={"whiteSpace": "pre-line"}),
             dcc.Graph(id="graph-content"),
             html.Plaintext(children="scale", style={"textAlign": "center"}),
-            dcc.Slider(
-                id="slider_scale",
+            dcc.Input(
+                id="input_scale",
+                type="number",
                 min=0.0,
                 max=5.0,
-                step=0.02,
                 value=1.0,
-                marks={i: "{:.1f}".format(i) for i in np.linspace(0.01, 5.0, 21)},
             ),
             html.Div(
                 [
                     html.Plaintext(children="offset", style={"textAlign": "center"}),
-                    dcc.Slider(
-                        id="slider_offset",
-                        min=-100,
-                        max=100,
-                        step=1,
+                    dcc.Input(
+                        id="input_offset",
+                        type="number",
+                        min=-10000.0,
+                        max=10000.0,
                         value=0.0,
-                        marks={i: str(i) for i in range(-100, 100, 10)},
                     ),
                 ],
             ),
