@@ -3,7 +3,7 @@ from bayes_opt import BayesianOptimization
 import plotly.graph_objects as go
 import pyarrow as pa
 import pyarrow.parquet as pq
-from dash import Dash, State, callback, Output, Input
+from dash import Dash, State, callback, Output, Input, ctx
 import json
 import dash_bootstrap_components as dbc
 
@@ -13,6 +13,7 @@ from app.state import (
     Settings,
     ViewState,
     alignment_or_default,
+    estimate_bounds,
     method_to_aligner,
 )
 import app.layout as layout
@@ -30,8 +31,9 @@ from tslib.generator import generate
 import tslib.processing.alignment as tsalign
 import tslib.io as tio
 
-FACTOR = 2
-OFFSET = 10
+FACTOR = 3
+OFFSET = 20
+
 REAL_OFFSET = FACTOR * OFFSET
 
 
@@ -51,8 +53,14 @@ def align(clicks, ts1json, ts2json, settings):
     del clicks
     ts1 = tio.from_json(ts1json)
     ts2 = tio.from_json(ts2json)
+
     settings = Settings(**json.loads(settings))
-    pbounds = {"translation": (-200.0, 200.0), "scale": (0.2, 5.0)}
+    lower_offset, upper_offset, lower_scale, upper_scale = estimate_bounds(ts1, ts2)
+    pbounds = {
+        "translation": (lower_offset, upper_offset),
+        "scale": (lower_scale, upper_scale),
+    }
+    print("starting alignment with: ", pbounds)
     aligner_class = method_to_aligner(settings.align_method)
     optimizer = BayesianOptimization(
         f=tsalign.align(ts1, ts2, aligner_class),
@@ -85,17 +93,13 @@ def register_settings(points, iterations, align_method):
     )
 
 
-for i in range(1, 3):
-
-    @callback(
-        Output(f"ts{i}store", "data"),
-        Output(f"info_filepath{i}", "children"),
-        State(f"info_upload{i}", "filename"),
-        Input(f"info_upload{i}", "contents"),
-    )
+def ts_factory(i):
     def register_upload(filename, content):
         if content is None:
-            ts = default_ts1()
+            if i == 1:
+                ts = default_ts1()
+            else:
+                ts = default_ts2()
             return tio.to_json(ts), "default dataset"
         content = content.split(",")[1]
         decoded = base64.b64decode(content)
@@ -109,20 +113,42 @@ for i in range(1, 3):
         # ts = pipeline.apply(ts)
         return tio.to_json(ts), f"file: {filename}"
 
-    @callback(Output(f"info_n{i}", "children"), Input(f"ts{i}store", "data"))
+    return register_upload
+
+
+for i in range(1, 3):
+    app.callback(
+        Output(f"ts{i}store", "data"),
+        Output(f"info_filepath{i}", "children"),
+        State(f"info_upload{i}", "filename"),
+        Input(f"info_upload{i}", "contents"),
+    )(ts_factory(i))
+
     def info_ts(ts_json):
         ts = tio.from_json(ts_json)
         return f"n: {len(ts.df)}"
 
+    app.callback(Output(f"info_n{i}", "children"), Input(f"ts{i}store", "data"))(
+        info_ts
+    )
+
 
 @callback(
     Output("alignment", "data", allow_duplicate=True),
+    Output("input_scale", "value"),
+    Output("input_offset", "value"),
+    Input("alignment", "data"),
     Input("input_scale", "value"),
     Input("input_offset", "value"),
     prevent_initial_call=True,
 )
-def alignment_slider(scale, offset):
-    return json.dumps(Alignment(scale, offset).__dict__)
+def alignment_slider(alignment_data, scale, offset):
+    trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
+    if trigger_id == "alignment":
+        alignment = alignment_or_default(alignment_data)
+    else:
+        alignment = Alignment(scale, offset)
+    return json.dumps(alignment.__dict__), alignment.scale, alignment.offset
 
 
 @callback(
@@ -134,6 +160,7 @@ def alignment_slider(scale, offset):
     Input("settings", "data"),
 )
 def update_graph(ts1, ts2, alignment, settings):
+    print("update_graph")
     # deserialize from data storage
     ts1, ts2 = tio.from_json(ts1), tio.from_json(ts2)
     alignment = alignment_or_default(alignment)

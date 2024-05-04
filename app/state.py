@@ -26,6 +26,22 @@ def alignment_or_default(input):
         return Alignment(**json.loads(input))
 
 
+def estimate_scale_radius(ts1: Timeseries, ts2: Timeseries, l=2.0):
+    f = len(ts1.df) / len(ts2.df)
+    return f / l, f * l
+
+
+def estimate_bounds(ts1, ts2, scale_freedom=1.6, percent_in_bounds=0.9):
+    assert scale_freedom >= 1
+    assert percent_in_bounds < 1.0
+    assert percent_in_bounds > 0.0
+    lower_scale, upper_scale = estimate_scale_radius(ts1, ts2, scale_freedom)
+    # max_overflow = upper * len(ts2.df) - len(ts1.df)
+    lower_offset = -lower_scale * len(ts2.df) * (1.0 - percent_in_bounds)
+    upper_offset = max(len(ts1.df), len(ts2.df)) * percent_in_bounds
+    return lower_offset, upper_offset, lower_scale, upper_scale
+
+
 @dataclass
 class Alignment:
     scale: float
