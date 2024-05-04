@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 from typing import Tuple
+
+from bayes_opt import ScreenLogger
 from tslib.processing.pipeline import (
     Pipeline,
     interpolate,
@@ -81,3 +83,18 @@ def method_to_aligner(method_name: str):
     else:
         print(f"method name {method_name} couldn't be matched")
         return CorrelationAligner
+
+
+class ProgressLogger(ScreenLogger):
+    def __init__(self, max, f):
+        self.current = 0
+        self.f = f
+        self.max = max
+        super().__init__(verbose=1)
+
+    def update(self, event, instance):
+        if self.current % 8 == 0:
+            cur, max = str(self.current), str(self.max)
+            self.f((cur, max))
+        self.current += 1
+        super().update(event, instance)

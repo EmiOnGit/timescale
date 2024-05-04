@@ -117,26 +117,34 @@ aligner_block = head_col(
                 html.Div("points"),
                 dcc.Slider(
                     id="slider_points",
-                    min=1,
-                    max=5000,
+                    min=0,
+                    max=800,
                     step=1,
                     value=100,
-                    marks={i: "{}".format(i) for i in range(0, 5001, 800)},
+                    marks={i: "{}".format(i) for i in range(0, 801, 100)},
                     # style={"width": "200px"},
                 ),
                 html.Div("iterations"),
                 dcc.Slider(
                     id="slider_iterations",
-                    min=1,
-                    max=160,
+                    min=0,
+                    max=120,
                     step=1,
-                    value=16,
-                    marks={i: "{}".format(i) for i in range(0, 161, 20)},
+                    value=20,
+                    marks={i: "{}".format(i) for i in range(0, 121, 20)},
                 ),
             ],
-            style={"width": "300px"},
+            style={"width": "400px"},
         ),
         html.Button("Align", id="calculate_align"),
+        html.Div(
+            [
+                html.Progress(id="progress_bar"),
+                html.Button("Cancel", id="cancel_align_button"),
+            ],
+            id="align_progress_box",
+            style={"visibility": "hidden"},
+        ),
     ]
 )
 

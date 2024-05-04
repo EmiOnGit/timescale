@@ -1,15 +1,18 @@
 #!/usr/bin/env python
 from bayes_opt import BayesianOptimization
+from bayes_opt.event import Events
 import plotly.graph_objects as go
 import pyarrow as pa
 import pyarrow.parquet as pq
-from dash import Dash, State, callback, Output, Input, ctx
+from dash import Dash, State, callback, Output, Input, ctx, DiskcacheManager
+import diskcache
 import json
 import dash_bootstrap_components as dbc
 
 import pandas as pd
 from app.state import (
     Alignment,
+    ProgressLogger,
     Settings,
     ViewState,
     alignment_or_default,
@@ -36,6 +39,8 @@ OFFSET = 20
 
 REAL_OFFSET = FACTOR * OFFSET
 
+cache = diskcache.Cache("./cache")
+background_callback_manager = DiskcacheManager(cache)
 
 app = Dash(name="timescale", external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.layout = layout.layout()
@@ -47,26 +52,41 @@ app.layout = layout.layout()
     State("ts1store", "data"),
     State("ts2store", "data"),
     State("settings", "data"),
+    background=True,
+    manager=background_callback_manager,
     prevent_initial_call=True,
+    running=[
+        (
+            Output("align_progress_box", "style"),
+            {"visibility": "visible"},
+            {"visibility": "hidden"},
+        )
+    ],
+    cancel=Input("cancel_align_button", "n_clicks"),
+    progress=[Output("progress_bar", "value"), Output("progress_bar", "max")],
 )
-def align(clicks, ts1json, ts2json, settings):
+def align(set_progress, clicks, ts1json, ts2json, settings):
     del clicks
     ts1 = tio.from_json(ts1json)
     ts2 = tio.from_json(ts2json)
 
     settings = Settings(**json.loads(settings))
+    total = settings.points + settings.iterations
+
     lower_offset, upper_offset, lower_scale, upper_scale = estimate_bounds(ts1, ts2)
     pbounds = {
         "translation": (lower_offset, upper_offset),
         "scale": (lower_scale, upper_scale),
     }
-    print("starting alignment with: ", pbounds)
     aligner_class = method_to_aligner(settings.align_method)
+
+    logger = ProgressLogger(total, set_progress)
     optimizer = BayesianOptimization(
         f=tsalign.align(ts1, ts2, aligner_class),
         pbounds=pbounds,
-        verbose=1,  # verbose = 1 prints only when a maximum is observed, verbose = 0 is silent
     )
+    optimizer.subscribe(Events.OPTIMIZATION_STEP, logger)
+
     optimizer.maximize(
         init_points=settings.points,
         n_iter=settings.iterations,
@@ -160,7 +180,6 @@ def alignment_slider(alignment_data, scale, offset):
     Input("settings", "data"),
 )
 def update_graph(ts1, ts2, alignment, settings):
-    print("update_graph")
     # deserialize from data storage
     ts1, ts2 = tio.from_json(ts1), tio.from_json(ts2)
     alignment = alignment_or_default(alignment)
