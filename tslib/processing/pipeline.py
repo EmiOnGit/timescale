@@ -1,5 +1,6 @@
+from __future__ import annotations
 import copy
-from typing import Callable
+from typing import Callable, Iterable, List
 import pandas as pd
 
 from tslib.timeseries import Timeseries
@@ -7,11 +8,15 @@ import numpy as np
 
 
 class Pipeline:
-    def __init__(self):
-        self.fs = []
+    fs: List = []
 
-    def push(self, f: Callable[[Timeseries], Timeseries]):
+    def push(self, f: Callable[[Timeseries], Timeseries]) -> Pipeline:
         self.fs.append(f)
+        return self
+
+    def push_batch(self, fs: Iterable[Callable[[Timeseries], Timeseries]]) -> Pipeline:
+        for f in fs:
+            self = self.push(f)
         return self
 
     def apply(self, ts: Timeseries, inplace=False):
@@ -20,6 +25,22 @@ class Pipeline:
         for f in self.fs:
             ts = f(ts)
         return ts
+
+    def __repr__(self) -> str:
+        fs = "[" + " | ".join([f.__name__ for f in self.fs]) + "]"
+        return "Pipeline: " + fs
+
+    def __call__(self, ts: Timeseries, inplace=False) -> Timeseries:
+        return self.apply(ts, inplace=inplace)
+
+    def pop(self):
+        self.fs.pop()
+
+    def copy(self) -> Pipeline:
+        pipeline = Pipeline()
+        for f in self.fs:
+            pipeline.push(f)
+        return pipeline
 
 
 def outlier_removal(ts: Timeseries):

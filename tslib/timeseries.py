@@ -53,6 +53,9 @@ class Timeseries:
             self._time_column = time_column
         self.df = df
 
+    def __repr__(self) -> str:
+        return f"timecolumn: {self._time_column} \n" + self.df.__repr__()
+
     def validate(self):
         """
         Valides the `Timeseries`. If the `Timeseries` is not valid, a exception is raised accordingly.
