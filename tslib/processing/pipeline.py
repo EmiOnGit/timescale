@@ -8,7 +8,8 @@ import numpy as np
 
 
 class Pipeline:
-    fs: List = []
+    def __init__(self):
+        self.fs: List[Callable[[Timeseries], Timeseries]] = []
 
     def push(self, f: Callable[[Timeseries], Timeseries]) -> Pipeline:
         self.fs.append(f)

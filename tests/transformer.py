@@ -39,7 +39,6 @@ def test_normalize():
     pipeline = Pipeline()
     pipeline.push(normalization(min=-1.0, max=1.0))
     ts2 = pipeline.apply(ts)
-    print(ts2.df)
     assert all(ts2.df["a"] == [0.0, -1.0, 1.0])
     assert all(ts2.df["b"] == [-1.0, 0.0, 1.0])
 
