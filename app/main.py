@@ -193,11 +193,19 @@ def update_graph(ts1, ts2, alignment, settings):
     # draw
     fig = go.Figure()
     fig.layout.__setattr__("uirevision", "const")
+
+    x_step = int((len(ts1.df) / 10_000) + 1)
+
+    x2_step = int((len(ts2_trans.df) / 10_000) + 1)
     fig.add_scatter(
-        x=ts2_trans.time_column(), y=ts2_trans.data_df().iloc[:, 0], name="ts2"
+        x=ts2_trans.time_column()[::x2_step],
+        y=ts2_trans.data_df().iloc[::x2_step, 0],
+        name="ts2",
     )
     # if 'uirevision' stays as it was before updating the figure, the zoom/ui will not reset. 'const' as value is arbitrary
-    fig.add_scatter(x=ts1.time_column(), y=ts1.data_df().iloc[:, 0], name="ts1")
+    fig.add_scatter(
+        x=ts1.time_column()[::x_step], y=ts1.data_df().iloc[::x_step, 0], name="ts1"
+    )
     aligner.add_visualization(fig)
     score = aligner.alignment_score()
     return f"{score}", fig
