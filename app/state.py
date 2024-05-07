@@ -8,7 +8,7 @@ from tslib.processing.pipeline import (
     index_to_time,
     normalization,
 )
-from tslib.processing.alignment import SumAligner, CorrelationAligner
+from tslib.processing.alignment import SumAligner, CorrelationAligner, EuclidianAligner
 
 from tslib.timeseries import Timeseries
 import json
@@ -80,6 +80,8 @@ def method_to_aligner(method_name: str):
         return CorrelationAligner
     elif method_name == "function sum":
         return SumAligner
+    elif method_name == "eucl":
+        return EuclidianAligner
     else:
         print(f"method name {method_name} couldn't be matched")
         return CorrelationAligner

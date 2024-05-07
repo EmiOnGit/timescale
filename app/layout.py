@@ -82,8 +82,8 @@ settings_block = head_col(
                         dcc.Input(
                             id="input_offset",
                             type="number",
-                            min=-10000.0,
-                            max=10000.0,
+                            min=-100000.0,
+                            max=100000.0,
                             value=0.0,
                         ),
                     ],
@@ -103,7 +103,7 @@ aligner_block = head_col(
     [
         header("Aligner"),
         dcc.Dropdown(
-            ["correlation", "function sum"],
+            ["correlation", "function sum", "eucl"],
             "correlation",
             id="method_dropdown",
             style={

@@ -207,7 +207,7 @@ def update_graph(ts1, ts2, alignment, settings):
 
 
 def default_ts1():
-    ts = generate.generate_simple_with_noise(n=100, dimensions=1)
+    ts = generate.generate_simple_with_noise(n=2000, dimensions=1)
     pipeline = Pipeline()
     pipeline.push(interpolate(factor=FACTOR)).push(index_to_time)
     ts = pipeline.apply(ts)
@@ -215,7 +215,7 @@ def default_ts1():
 
 
 def default_ts2():
-    ts2 = generate.generate_simple_with_noise(n=100, dimensions=1)
+    ts2 = generate.generate_simple_with_noise(n=2000, dimensions=1)
     pipeline = Pipeline()
     pipeline.push(add(4))
     ts2 = pipeline.apply(ts2)

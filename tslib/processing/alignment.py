@@ -65,6 +65,33 @@ class BaseAligner(ABC):
         pass
 
 
+def calculate_eucl_distance(ts1: Timeseries, ts2: Timeseries):
+    cols1 = [n + "_x" for n in ts1.data_df().columns]
+    cols2 = [n + "_y" for n in ts2.data_df().columns]
+    size = min(len(cols1), len(cols2))
+    df = pd.merge(ts1.df, ts2.df, left_on=ts1._time_column, right_on=ts2._time_column)
+    diff = np.abs(df[cols1[:size]].to_numpy() - df[cols2[:size]].to_numpy())
+    df["result"] = 1.0 - diff
+    return df
+
+
+class EuclidianAligner(BaseAligner):
+    def apply(self):
+        if hasattr(self, "cache"):
+            return self.cache
+        else:
+            self.cache = calculate_eucl_distance(self.ts1, self.ts2)
+            return self.apply()
+
+    def alignment_score(self):
+        sums = self.apply()
+        return np.sum(sums["result"])
+
+    def add_visualization(self, figure: Figure):
+        sums = self.apply()
+        figure.add_bar(x=sums["timestamp"], y=sums["result"], name="sums")
+
+
 def calculate_sum(ts1, ts2):
     df = pd.merge(ts1.df, ts2.df, left_on=ts1._time_column, right_on=ts2._time_column)
     df["result"] = df.loc[
@@ -93,7 +120,7 @@ class SumAligner(BaseAligner):
 
     def add_visualization(self, figure: Figure):
         sums = self.apply()
-        figure.add_bar(x=sums["timestamp"], y=sums["result"], name="sums")
+        figure.add_bar(x=sums["timestamp"], y=sums["result"] - 1, name="sums")
 
 
 def calculate_corr(ts1, ts2):
