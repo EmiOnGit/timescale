@@ -60,9 +60,9 @@ class Timeseries:
         """
         Valides the `Timeseries`. If the `Timeseries` is not valid, a exception is raised accordingly.
         A valid `Timeseries` does contain a valid "time" column in the `DataFrame`.
-        A valid time column has elements of a sub class from :class:`np.integer`, :class:`float` or :class: `np.datetime64`
+        A valid time column has elements of a sub class from :class:`np.integer` or :class:`float`
         and is strictly sorted in ascending order.
-        Raises an corresponding exception if the `Timeseries` is no valid.
+        Raises an corresponding exception if the `Timeseries` is not valid.
 
         Exceptions
         ----------
@@ -84,13 +84,11 @@ class Timeseries:
         time_type = self.df.dtypes[self._time_column]
 
         # Check if the time column contains a valid datatype.
-        if (
-            not np.issubdtype(time_type, np.integer)
-            and not np.issubdtype(time_type, np.datetime64)
-            and not np.issubdtype(time_type, float)
+        if not np.issubdtype(time_type, np.integer) and not np.issubdtype(
+            time_type, float
         ):
             raise AttributeError(
-                "Invalid type of column referenced by `time_column`. Should be of type :class:`np.integer`, :class:`float` or :class:`np.datetime64`."
+                "Invalid type of column referenced by `time_column`. Should be of type :class:`np.integer` or :class:`float`."
             )
         time_values = self.df[self._time_column]
         if any(
