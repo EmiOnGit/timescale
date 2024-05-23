@@ -3,7 +3,7 @@ import copy
 from typing import Callable, Iterable, List
 import pandas as pd
 
-from tslib.timeseries import Timeseries
+from timescale.timeseries import Timeseries
 import numpy as np
 
 

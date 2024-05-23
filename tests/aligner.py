@@ -1,7 +1,7 @@
 import pandas as pd
-from tslib.timeseries import Timeseries
-from tslib.processing.pipeline import *
-import tslib.processing.alignment as talign
+from timescale.timeseries import Timeseries
+from timescale.processing.pipeline import *
+import timescale.processing.alignment as talign
 
 
 def sample_ts():

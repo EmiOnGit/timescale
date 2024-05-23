@@ -29,10 +29,10 @@ pathname = os.path.dirname(sys.argv[0])
 path = pathname + "/.."
 # needed to import tslib when executing this file
 sys.path.append(path)
-from tslib.processing.pipeline import Pipeline, add, interpolate, index_to_time
-from tslib.generator import generate
-import tslib.processing.alignment as tsalign
-import tslib.io as tio
+from timescale.processing.pipeline import Pipeline, add, interpolate, index_to_time
+from timescale.generator import generate
+import timescale.processing.alignment as tsalign
+import timescale.io as tio
 
 FACTOR = 3
 OFFSET = 20

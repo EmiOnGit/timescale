@@ -1,5 +1,5 @@
 [project]
-name = "tslib"
+name = "timescale"
 version = "0.0.1"
 description = "timeseries processing library"
 authors = [
@@ -8,7 +8,7 @@ authors = [
 requires-python = ">= 3.10"
 license = {file = "LICENSE"}
 readme = "README.md"
-dependencies = ["pandas", "numpy", "polars"]
+dependencies = ["pandas", "numpy", "pyarrow"]
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

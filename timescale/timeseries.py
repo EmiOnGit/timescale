@@ -5,7 +5,7 @@ Timeseries
 """
 
 import pandas as pd
-import tslib.utils as utils
+import timescale.utils as utils
 import numpy as np
 
 DEFAULT_TIME_COLUMN = "time"

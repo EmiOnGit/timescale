@@ -1,4 +1,4 @@
-from tslib.timeseries import Timeseries
+from timescale.timeseries import Timeseries
 import pyarrow as pa
 import os
 import pandas as pd
@@ -6,12 +6,12 @@ import pandas as pd
 
 def write_as_parquet(ts: Timeseries, filepath: str | os.PathLike):
     """Writes a `Timeseries` object to a parquet file.
-    This function requires pyarrow to run.
+    This function requires pyarrow to be installed.
 
     Parameters
     ----------
     ts
-        The timeseries which should be written to a file
+        The timeseries, which should be written to a file
     filepath
         The path of the parquet file
     """
@@ -28,6 +28,9 @@ def write_as_parquet(ts: Timeseries, filepath: str | os.PathLike):
 
 
 def ts_from_arrow_table(table, time_column=None) -> Timeseries:
+    """Converts a arrow table to a timeseries.
+    This can fail if the `time_column` is not encoded in the metadata and can not be automatically detected.
+    """
     df = table.to_pandas()
     if not time_column is None:
         return Timeseries(df=df, time_column=time_column)
@@ -43,7 +46,7 @@ def read_from_parquet_file(
     filepath: str | os.PathLike, time_column: str | int | None = None
 ) -> Timeseries:
     """Reads a `Timeseries` object from a file.
-    This function requires pyarrow to run
+    This function requires pyarrow to be installed.
 
     Parameters
     ----------

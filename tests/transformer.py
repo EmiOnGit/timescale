@@ -1,6 +1,6 @@
 import pandas as pd
-from tslib.timeseries import Timeseries
-from tslib.processing.pipeline import *
+from timescale.timeseries import Timeseries
+from timescale.processing.pipeline import *
 
 
 def sample_ts():

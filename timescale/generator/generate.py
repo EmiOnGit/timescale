@@ -1,5 +1,5 @@
 from gutenTAG.gutenTAG import GutenTAG
-from tslib.timeseries import Timeseries
+from timescale.timeseries import Timeseries
 import pandas as pd
 
 

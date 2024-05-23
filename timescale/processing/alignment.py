@@ -1,15 +1,15 @@
-from tslib.processing.pipeline import (
+from timescale.processing.pipeline import (
     Pipeline,
     normalization,
     interpolate,
     index_to_time,
 )
+from timescale.timeseries import Timeseries
 import pandas as pd
 import numpy as np
 
 from plotly.graph_objects import Figure
 from abc import ABC, abstractmethod
-from tslib.timeseries import Timeseries
 from dataclasses import dataclass
 
 
