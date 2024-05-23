@@ -57,13 +57,16 @@ def sampling(ts: Timeseries):
 
 
 def interpolate(factor):
-    """Interpolates all data points"""
+    """Interpolates all data points by a given factor.
+    If the `Timerseries` has 10 datapoints and factor=1.5, then the returned timeseries will have 15 datapoints.
+    The amount will be rounded to the next integer.
+    Linear interpolation is used.
+    """
 
     def _interpolate_apply(ts: Timeseries):
         df = ts.df
         # number of elements in each column after interpolating
         num = int(len(df) * factor)
-        # x2_old = [x for x in range(len(df))]
         x2_old = [x for x in ts.time_column()]
         # The x axis should be in the same interval than before
         x2 = np.linspace(x2_old[0], x2_old[-1], num=num)
@@ -81,7 +84,7 @@ def interpolate(factor):
 
 
 def index_to_time(ts: Timeseries):
-    """overrides the `time_column` of the time series with the index of the `DataFrame`
+    """Overrides the `time_column` of the `Timeseries` with the current index of the `DataFrame`.
 
     ---
     Examples:
@@ -124,29 +127,44 @@ def standardization(ts: Timeseries):
     pass
 
 
-def mult(n=1.0):
+def mult(x=1.0):
+    """Multiplies each row with x.
+    This does not affect the _time_column of the `Timeseries`.
+    """
+
     def multiplier(ts: Timeseries):
         df = ts.data_df()
         for c in df:
-            x = df[c]
-            ts.df[c] = x * n
+            r = df[c]
+            ts.df[c] = r * x
         return ts
 
     return multiplier
 
 
-def add(n=1.0):
+def add(x=1.0):
+    """Adds x to each row.
+    This does not affect the _time_column of the `Timeseries`.
+    """
+
     def adder(ts: Timeseries):
         df = ts.data_df()
         for c in df:
-            x = df[c]
-            ts.df[c] = x + n
+            r = df[c]
+            ts.df[c] = r + x
         return ts
 
     return adder
 
 
 def normalization(min=0.0, max=1.0):
+    """Normalizes each row of the `Timeseries to be between `min` and `max`.
+    This means that for each data row `x`:
+        min(x) == min
+        max(x) == max
+    Normalization does not affter the _time_column of the `Timeseries`
+    """
+
     def normalize(ts: Timeseries):
         df = ts.data_df()
         for c in df:
