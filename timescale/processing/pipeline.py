@@ -44,18 +44,6 @@ class Pipeline:
         return pipeline
 
 
-def outlier_removal(ts: Timeseries):
-    pass
-
-
-def smoothing(ts: Timeseries):
-    pass
-
-
-def sampling(ts: Timeseries):
-    pass
-
-
 def interpolate(factor):
     """Interpolates all data points by a given factor.
     If the `Timerseries` has 10 datapoints and factor=1.5, then the returned timeseries will have 15 datapoints.
@@ -111,22 +99,6 @@ def cut_front(n=1, reindex=False):
     return cut_front_inner
 
 
-def segmentation(ts: Timeseries):
-    pass
-
-
-def power_transform(ts: Timeseries):
-    pass
-
-
-def difference_transform(ts: Timeseries):
-    pass
-
-
-def standardization(ts: Timeseries):
-    pass
-
-
 def mult(x=1.0):
     """Multiplies each row with x.
     This does not affect the _time_column of the `Timeseries`.
@@ -173,3 +145,31 @@ def normalization(min=0.0, max=1.0):
         return ts
 
     return normalize
+
+
+def outlier_removal(ts: Timeseries):
+    pass
+
+
+def smoothing(ts: Timeseries):
+    pass
+
+
+def sampling(ts: Timeseries):
+    pass
+
+
+def segmentation(ts: Timeseries):
+    pass
+
+
+def power_transform(ts: Timeseries):
+    pass
+
+
+def difference_transform(ts: Timeseries):
+    pass
+
+
+def standardization(ts: Timeseries):
+    pass
