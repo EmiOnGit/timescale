@@ -1,7 +1,7 @@
 from timescale.processing.pipeline import (
     Pipeline,
     normalization,
-    interpolate,
+    interpolate_count,
     index_to_time,
 )
 from timescale.timeseries import Timeseries
@@ -49,7 +49,8 @@ class BaseAligner(ABC):
     def transform(self, alignment: Alignment):
         norm_pipeline = Pipeline().push(normalization(-1.0, 1.0))
         pipeline = Pipeline()
-        pipeline.push(interpolate(factor=alignment.scale)).push(index_to_time)
+        new_n = int(self.ts2.df.len() * alignment.scale)
+        pipeline.push(interpolate_count(n=new_n)).push(index_to_time)
         ts_trans2 = pipeline.apply(self.ts2)
         translate(ts_trans2, alignment.translation)
         self.ts2 = norm_pipeline.apply(ts_trans2)

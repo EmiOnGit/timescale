@@ -44,20 +44,19 @@ class Pipeline:
         return pipeline
 
 
-def interpolate(factor):
-    """Interpolates all data points by a given factor.
+def interpolate_count(n):
+    """Interpolates all data points such that the timeseries has `n` elements.
     If the `Timerseries` has 10 datapoints and factor=1.5, then the returned timeseries will have 15 datapoints.
     The amount will be rounded to the next integer.
     Linear interpolation is used.
     """
+    assert n > 0
 
     def _interpolate_apply(ts: Timeseries):
         df = ts.df
-        # number of elements in each column after interpolating
-        num = int(len(df) * factor)
         x2_old = [x for x in ts.time_column()]
         # The x axis should be in the same interval than before
-        x2 = np.linspace(x2_old[0], x2_old[-1], num=num)
+        x2 = np.linspace(x2_old[0], x2_old[-1], num=n)
         # We need to first calculate all interpolation before reindexing because weird sideeffects might occur if the df was indexed weirdly before
         interp = {}
         for c in df:
@@ -67,6 +66,22 @@ def interpolate(factor):
             df[c] = interp[c]
         ts.df = df
         return ts
+
+    return _interpolate_apply
+
+
+def interpolate_factor(factor):
+    """Interpolates all data points by a given factor.
+    If the `Timerseries` has 10 datapoints and factor=1.5, then the returned timeseries will have 15 datapoints.
+    The amount will be rounded to the next integer.
+    Linear interpolation is used.
+    """
+
+    def _interpolate_apply(ts: Timeseries):
+        # number of elements in each column after interpolating
+        num = int(len(ts.df) * factor)
+        interp = interpolate_count(n=num)
+        return interp(ts)
 
     return _interpolate_apply
 
