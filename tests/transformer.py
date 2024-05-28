@@ -55,7 +55,7 @@ def test_index_to_time():
 def test_interpolate():
     ts = sample_ts()
     pipeline = Pipeline()
-    pipeline.push(interpolate(5.0 / 3.0))
+    pipeline.push(interpolate_factor(5.0 / 3.0))
     ts2 = pipeline.apply(ts)
     assert all(ts2.df["a"] == [3.0, 2.5, 2.0, 3.0, 4.0])
     assert all(ts2.df["b"] == [-1.0, 1.5, 4.0, 6.5, 9.0])
