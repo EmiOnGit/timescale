@@ -2,15 +2,19 @@ from dataclasses import dataclass
 from typing import Tuple
 
 from bayes_opt import ScreenLogger
-from tslib.processing.pipeline import (
+from timescale.processing.pipeline import (
     Pipeline,
-    interpolate,
+    interpolate_factor,
     index_to_time,
     normalization,
 )
-from tslib.processing.alignment import SumAligner, CorrelationAligner, EuclidianAligner
+from timescale.processing.alignment import (
+    SumAligner,
+    CorrelationAligner,
+    EuclidianAligner,
+)
 
-from tslib.timeseries import Timeseries
+from timescale.timeseries import Timeseries
 import json
 
 
@@ -40,7 +44,7 @@ def estimate_bounds(ts1, ts2, scale_freedom=1.6, percent_in_bounds=0.9):
     lower_scale, upper_scale = estimate_scale_radius(ts1, ts2, scale_freedom)
     # max_overflow = upper * len(ts2.df) - len(ts1.df)
     lower_offset = -lower_scale * len(ts2.df) * (1.0 - percent_in_bounds)
-    upper_offset = max(len(ts1.df), len(ts2.df)) * percent_in_bounds
+    upper_offset = len(ts1.df) * percent_in_bounds
     return lower_offset, upper_offset, lower_scale, upper_scale
 
 
@@ -58,7 +62,9 @@ class ViewState:
 
     def transform_ts2(self):
         pipeline = Pipeline()
-        pipeline.push(interpolate(factor=self.alignment.scale)).push(index_to_time)
+        pipeline.push(interpolate_factor(factor=self.alignment.scale)).push(
+            index_to_time
+        )
         ts_trans2 = pipeline.apply(self.ts2)
         ts_trans2.df[ts_trans2._time_column] = [
             x + self.alignment.offset for x in ts_trans2.time_column()

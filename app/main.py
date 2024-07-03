@@ -10,7 +10,7 @@ import json
 import dash_bootstrap_components as dbc
 
 import pandas as pd
-from app.state import (
+from state import (
     Alignment,
     ProgressLogger,
     Settings,
@@ -19,7 +19,7 @@ from app.state import (
     estimate_bounds,
     method_to_aligner,
 )
-import app.layout as layout
+import layout as layout
 import base64
 
 import os
@@ -29,7 +29,13 @@ pathname = os.path.dirname(sys.argv[0])
 path = pathname + "/.."
 # needed to import tslib when executing this file
 sys.path.append(path)
-from timescale.processing.pipeline import Pipeline, add, interpolate, index_to_time
+from timescale.processing.pipeline import (
+    Pipeline,
+    add,
+    index_to_time,
+    interpolate_factor,
+    normalization,
+)
 from timescale.generator import generate
 import timescale.processing.alignment as tsalign
 import timescale.io as tio
@@ -128,9 +134,10 @@ def ts_factory(i):
         table = pq.read_table(reader)
         ts = tio.ts_from_arrow_table(table)
         # TODO!!! time column has to be of the same time between ts1 and ts2. Not sure if we want to push index to time column
-        # pipeline = Pipeline()
-        # pipeline.push(index_to_time)
-        # ts = pipeline.apply(ts)
+        pipeline = Pipeline()
+        pipeline.push(index_to_time)
+        pipeline.push(normalization())
+        ts = pipeline.apply(ts)
         return tio.to_json(ts), f"file: {filename}"
 
     return register_upload
@@ -209,7 +216,7 @@ def update_graph(ts1, ts2, alignment, settings):
 def default_ts1():
     ts = generate.generate_simple_with_noise(n=2000, dimensions=1)
     pipeline = Pipeline()
-    pipeline.push(interpolate(factor=FACTOR)).push(index_to_time)
+    pipeline.push(interpolate_factor(factor=FACTOR)).push(index_to_time)
     ts = pipeline.apply(ts)
     return ts
 

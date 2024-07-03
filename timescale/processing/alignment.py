@@ -47,9 +47,9 @@ class BaseAligner(ABC):
     ts2: Timeseries
 
     def transform(self, alignment: Alignment):
-        norm_pipeline = Pipeline().push(normalization(-1.0, 1.0))
+        norm_pipeline = Pipeline().push(normalization(-1.0, 1.0)).push(index_to_time)
         pipeline = Pipeline()
-        new_n = int(self.ts2.df.len() * alignment.scale)
+        new_n = int(self.ts2.df.shape[0] * alignment.scale)
         pipeline.push(interpolate_count(n=new_n)).push(index_to_time)
         ts_trans2 = pipeline.apply(self.ts2)
         translate(ts_trans2, alignment.translation)

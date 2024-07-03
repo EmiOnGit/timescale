@@ -43,6 +43,18 @@ class Pipeline:
             pipeline.push(f)
         return pipeline
 
+    def interpolate(self, new_count: int) -> Pipeline:
+        return self.push(interpolate_count(new_count))
+
+    def index_to_time(self) -> Pipeline:
+        return self.push(index_to_time)
+
+    def normalize(self, min=0.0, max=1.0) -> Pipeline:
+        return self.push(normalization(min, max))
+
+    def cut_front(self, amount=1, reindex=True) -> Pipeline:
+        return self.push(cut_front(amount, reindex))
+
 
 def interpolate_count(n):
     """Interpolates all data points such that the timeseries has `n` elements.
@@ -104,7 +116,7 @@ def index_to_time(ts: Timeseries):
     return ts
 
 
-def cut_front(n=1, reindex=False):
+def cut_front(n=1, reindex=True):
     def cut_front_inner(ts: Timeseries) -> Timeseries:
         ts.df = pd.DataFrame(ts.df[n:].dropna(axis="rows"))
         if reindex:
