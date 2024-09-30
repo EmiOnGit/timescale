@@ -1,6 +1,5 @@
 *.ipynb
 gutentag/
-assets/
 # *.parquet
 cache/
 # Byte-compiled / optimized / DLL files
