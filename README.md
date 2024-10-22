@@ -1,3 +1,3 @@
 # Timescale
 
-Library for processing of timeseries data in python
+Library for processing of time series data in python.

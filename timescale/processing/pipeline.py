@@ -161,7 +161,7 @@ def normalization(min=0.0, max=1.0):
     This means that for each data row `x`:
         min(x) == min
         max(x) == max
-    Normalization does not affter the _time_column of the `Timeseries`
+    Normalization does not affect the _time_column of the `Timeseries`
     """
 
     def normalize(ts: Timeseries):
@@ -178,8 +178,32 @@ def outlier_removal(ts: Timeseries):
     pass
 
 
-def smoothing(ts: Timeseries):
-    pass
+def smoothing_basic(n=1):
+    """Smoothes the `Timeseries` using the moving average"""
+
+    def _smoothing(ts: Timeseries):
+        df = ts.data_df()
+        for c in df:
+            x = df[c]
+            ts.df[c] = x.rolling(window=n).mean()
+        return ts
+
+    return _smoothing
+
+
+def smoothing_exponential():
+    """Smoothes the `Timeseries` using the exponential moving average"""
+
+    def _smoothing(ts: Timeseries):
+        df = ts.data_df()
+
+        length = len(ts.time_column())
+        alpha = 2.0 / (length - 1)
+        for c in df:
+            ts.df[c] = df[c].ewm(com=0.5, adjust=False).mean()
+        return ts
+
+    return _smoothing
 
 
 def sampling(ts: Timeseries):

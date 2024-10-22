@@ -1,4 +1,6 @@
 *.ipynb
+assets/
+graphs/
 gutentag/
 # *.parquet
 cache/
